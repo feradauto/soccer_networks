@@ -151,7 +151,7 @@ for (i in 1:nrow(goals_by_match)){
 }
 
 library(data.table)
-long_lineups_games <- melt(lineups_games,  id.vars="match_id", measure.vars=c("lineup_1", "time_1", "goals_1"))
+#long_lineups_games <- melt(lineups_games,  id.vars="match_id", measure.vars=c("lineup_1", "time_1", "goals_1"))
 
 unlist(lineups_games[1,2])
 lineups_unlisted <- cbind(lineups_games[!sapply(lineups_games, is.list)], 
@@ -159,6 +159,20 @@ lineups_unlisted <- cbind(lineups_games[!sapply(lineups_games, is.list)],
 
 write.csv(lineups_unlisted, "lineups_unlisted", row.names = FALSE)
 
-
-
+## format change
+## keep sorted to facilitate joins
+lineups_games$lineup_1<-lapply(lineups_games$lineup_1,sort)
+lineups_games$lineup_2<-lapply(lineups_games$lineup_2,sort)
+lineups_games$lineup_3<-lapply(lineups_games$lineup_3,sort)
+lineups_games$lineup_4<-lapply(lineups_games$lineup_4,sort)
+## stack the 4 lineups
+lu1<-select(lineups_games,c('match_id','lineup_1','time_1','goals_1')) %>% rename(lineup=lineup_1,time=time_1,goals=goals_1)
+lu2<-select(lineups_games,c('match_id','lineup_2','time_2','goals_2')) %>% rename(lineup=lineup_2,time=time_2,goals=goals_2)
+lu3<-select(lineups_games,c('match_id','lineup_3','time_3','goals_3')) %>% rename(lineup=lineup_3,time=time_3,goals=goals_3)
+lu4<-select(lineups_games,c('match_id','lineup_4','time_4','goals_4')) %>% rename(lineup=lineup_4,time=time_4,goals=goals_4)
+lineups_formated <- rbind(lu1,lu2,lu3,lu4)
+## add match if necessary
+lineups_formated_agg<-lineups_formated %>% group_by(lineup) %>% summarise(time=sum(time),goals=sum(goals))
+lineups_formated_agg$id_lineup<-rownames(lineups_formated_agg)
+save(lineups_formated_agg, file = "../data/processed/lineups_formated_agg.RData")
 
