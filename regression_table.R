@@ -27,6 +27,7 @@ lu_melt_form_combn<-mutate(lu_melt_form_combn, pair = mapply(c, p1, p2, SIMPLIFY
 lu_melt_form_combn$pair<-lapply(lu_melt_form_combn$pair,sort)
 
 time_xa_agg<-time_xa %>% group_by(pair,player.id.shot,player.id.pass) %>% summarise(xA = sum(xA),time_pair=sum(time))
+time_xa_agg$xA_90<-90*time_xa_agg$xA/time_xa_agg$time_pair
 
 lineup_pairs<-merge(lineups_formated_agg[c("id_lineup","lineup")], lu_melt_form_combn, by = c("id_lineup"))
 
@@ -45,6 +46,8 @@ time_xa_agg<-cbind(time_xa_agg[, -which(names(time_xa_agg) %in% c("pair"))],lapp
 lineup_pairs_xa<-merge(lineup_pairs, time_xa_agg, by = c("pair.1","pair.2"))
 lineup_pairs_xa$xA_90<-90*lineup_pairs_xa$xA/lineup_pairs_xa$time_pair
 xA_goals<-lineup_pairs_xa %>% group_by(id_lineup,lineup) %>% summarise(xA_90 = sum(xA_90))
+lineups_formated_agg<-lineups_formated_agg   %>% filter(time>1)
+lineups_formated_agg$goals<-90*lineups_formated_agg$goals/lineups_formated_agg$time
 xA_goals<-merge(xA_goals, lineups_formated_agg, by = c("id_lineup","lineup"))
 
 plot_colorByDensity = function(x1,x2,
@@ -64,14 +67,15 @@ plot_colorByDensity = function(x1,x2,
 }
 xA_goalsm<-xA_goals   %>% filter(time>45)
 cor(xA_goalsm$xA_90,xA_goalsm$goals)
-plot_colorByDensity(xA_goalsm$xA_90,xA_goalsm$goals)
+fit <- lm(goals ~ xA_90, data=xA_goalsm)
+summary(fit)
+confint(fit)
+plot_colorByDensity(xA_goalsm$xA_90,xA_goalsm$goals,main = "xA vs goals",ylab="Goals 90 min",xlab="xA 90 min")
 
-
-
-ggplot(xA_goalsm, aes(y=goals, x=xA_90, color=time)) +
+ggplot(xA_goalsm, aes(y=goals, x=xA_90)) +
   geom_point(size=3) +
   labs(title="xA vs goals") +
-  ylab("Goals") +
-  xlab("xA 90 min") +
-  geom_abline(slope=1, intercept=0)
+  ylab("Goals 90 min") +
+  xlab("xA 90 min")
+#+ geom_abline(slope=1, intercept=0)
 
