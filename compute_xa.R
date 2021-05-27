@@ -10,12 +10,13 @@ Matches <- FreeMatches(Comp)
 
 # filter only barca matches
 BarcaMatches <- Matches[Matches$away_team.away_team_name=="Barcelona" | Matches$home_team.home_team_name=="Barcelona",]
-
+#BarcaMatches <- BarcaMatches[BarcaMatches$season.season_name=="2018/2019",]
 # barca lineups
 lineups <- StatsBombFreeLineups(MatchesDF = BarcaMatches)
 lineups <- lineups[lineups$team_name=="Barcelona",]
 
 BarcaEvents <- StatsBombData[StatsBombData$team.name=="Barcelona",]
+#BarcaEvents <- BarcaEvents[BarcaEvents$match_id %in% BarcaMatches$match_id,]
 
 ##### get number of xG and join with key pass to get xA
 passes <- BarcaEvents[BarcaEvents$type.name=="Pass",]
@@ -70,7 +71,7 @@ unlist_func <- function(data) {
       data.frame(do.call(rbind, x), check.names=FALSE)))
   cbind(data[!temp1], temp2)
 }
-
+lineups_time_agg<-lineups_time_agg%>% filter(time>0)
 lineups_time_agg_unlisted<-unlist_func(lineups_time_agg)
 lu_melt<- melt(as.data.table(lineups_time_agg_unlisted),  id.vars=c("match_id","id_lineup","time"), measure.vars=c("lineup.1","lineup.2",
                                                                                                                          "lineup.3","lineup.4","lineup.5","lineup.6","lineup.7","lineup.8","lineup.9","lineup.10","lineup.11"))
@@ -86,8 +87,18 @@ lu_melt_combn_agg<-mutate(lu_melt_combn_agg, pair = mapply(c, p1, p2, SIMPLIFY =
 ## keep sorted for future join
 lu_melt_combn_agg$pair<-lapply(lu_melt_combn_agg$pair,sort)
 
+lu_melt_combn_agg1<-cbind(lu_melt_combn_agg[, -which(names(lu_melt_combn_agg) %in% c("pair"))],lapply(lu_melt_combn_agg["pair"], function(x) 
+  +     data.frame(do.call(rbind, x), check.names=FALSE))) %>% rename(player.id.shot=pair.1,player.id.pass=pair.2)
+lu_melt_combn_agg2<-lu_melt_combn_agg1%>% rename(player.id.shot=player.id.pass,player.id.pass=player.id.shot)
 
 ## join xA with time played per match and pair of players (order matters for xA)
-time_xa<-merge(lu_melt_combn_agg, pass_shot, by = c("match_id","pair"))
+time_xa1<-merge(lu_melt_combn_agg1, pass_shot, by = c("match_id","player.id.pass","player.id.shot"),all.x=TRUE)
+time_xa2<-merge(lu_melt_combn_agg2, pass_shot, by = c("match_id","player.id.pass","player.id.shot"),all.x=TRUE)
+time_xa1$xA[is.na(time_xa1$xA)] <- 0
+time_xa2$xA[is.na(time_xa2$xA)] <- 0
+time_xa <- rbind(time_xa1, time_xa2)
+time_xa<-mutate(time_xa, pair = mapply(c, player.id.pass, player.id.shot, SIMPLIFY = F)) 
+## keep sorted for future join
+time_xa$pair<-lapply(time_xa$pair,sort)
 save(time_xa, file = "../data/processed/time_xa.RData")
 

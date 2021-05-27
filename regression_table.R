@@ -6,14 +6,25 @@ library(ggplot2)
 load("../data/processed/lineups_formated_agg.RData")
 load("../data/processed/time_xa.RData")
 ## unlist and then aggregate to get all possible combinations of 2 players among a lineup
-unlist_func <- function(data) {
+unlist_func1 <- function(data) {
   temp1 <- sapply(data, is.list)
   temp2 <- do.call(
     cbind, lapply(data[temp1], function(x) 
       data.frame(do.call(rbind, x), check.names=FALSE)))
   cbind(data[!temp1], temp2)
 }
+unlist_func <- function(data) {
+  temp1 <- plyr::ldply(data[[1]], rbind)
+  temp <- cbind(data[,2:4], temp1)
+  colnames(temp) <- c("time","goals","id_lineup",
+                      "lineup.1","lineup.2", "lineup.3","lineup.4",
+                      "lineup.5","lineup.6","lineup.7","lineup.8",
+                      "lineup.9","lineup.10","lineup.11")
+  return(temp)
+} 
 
+
+lineups_formated_agg<-lineups_formated_agg   %>% filter(time>0)
 lineups_formated_agg_unlisted<-unlist_func(lineups_formated_agg)
 lu_melt_formated<- melt(as.data.table(lineups_formated_agg_unlisted),  id.vars=c("id_lineup","time"), measure.vars=c("lineup.1","lineup.2",
                                                                                                                      "lineup.3","lineup.4","lineup.5","lineup.6","lineup.7","lineup.8","lineup.9","lineup.10","lineup.11"))
@@ -27,7 +38,7 @@ lu_melt_form_combn<-mutate(lu_melt_form_combn, pair = mapply(c, p1, p2, SIMPLIFY
 lu_melt_form_combn$pair<-lapply(lu_melt_form_combn$pair,sort)
 
 time_xa_agg<-time_xa %>% group_by(pair,player.id.shot,player.id.pass) %>% summarise(xA = sum(xA),time_pair=sum(time))
-time_xa_agg$xA_90<-90*time_xa_agg$xA/time_xa_agg$time_pair
+#time_xa_agg$xA_90<-90*time_xa_agg$xA/time_xa_agg$time_pair
 
 lineup_pairs<-merge(lineups_formated_agg[c("id_lineup","lineup")], lu_melt_form_combn, by = c("id_lineup"))
 
@@ -47,7 +58,7 @@ lineup_pairs_xa<-merge(lineup_pairs, time_xa_agg, by = c("pair.1","pair.2"))
 lineup_pairs_xa$xA_90<-90*lineup_pairs_xa$xA/lineup_pairs_xa$time_pair
 xA_goals<-lineup_pairs_xa %>% group_by(id_lineup,lineup) %>% summarise(xA_90 = sum(xA_90))
 lineups_formated_agg<-lineups_formated_agg   %>% filter(time>1)
-lineups_formated_agg$goals<-90*lineups_formated_agg$goals/lineups_formated_agg$time
+lineups_formated_agg$goals_90<-90*lineups_formated_agg$goals/lineups_formated_agg$time
 xA_goals<-merge(xA_goals, lineups_formated_agg, by = c("id_lineup","lineup"))
 
 plot_colorByDensity = function(x1,x2,
@@ -65,17 +76,16 @@ plot_colorByDensity = function(x1,x2,
        cex=2,xlab=xlab,ylab=ylab,
        main=main)
 }
-xA_goalsm<-xA_goals   %>% filter(time>45)
-cor(xA_goalsm$xA_90,xA_goalsm$goals)
-fit <- lm(goals ~ xA_90, data=xA_goalsm)
+xA_goalsm<-xA_goals   %>% filter(time>30)
+cor(xA_goalsm$xA_90,xA_goalsm$goals_90)
+fit <- lm(goals_90 ~ xA_90, data=xA_goalsm)
 summary(fit)
 confint(fit)
-plot_colorByDensity(xA_goalsm$xA_90,xA_goalsm$goals,main = "xA vs goals",ylab="Goals 90 min",xlab="xA 90 min")
+plot_colorByDensity(xA_goalsm$xA_90,xA_goalsm$goals_90,main = "xA vs goals",ylab="Goals 90 min",xlab="xA 90 min")
 
-ggplot(xA_goalsm, aes(y=goals, x=xA_90)) +
+ggplot(xA_goalsm, aes(y=goals_90, x=xA_90)) +
   geom_point(size=3) +
   labs(title="xA vs goals") +
   ylab("Goals 90 min") +
-  xlab("xA 90 min")
-#+ geom_abline(slope=1, intercept=0)
+  xlab("xA 90 min")+ geom_abline(slope=1, intercept=0)
 

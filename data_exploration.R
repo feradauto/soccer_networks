@@ -15,7 +15,7 @@ names(Matches)
 
 # filter only barca matches
 BarcaMatches <- Matches[Matches$away_team.away_team_name=="Barcelona" | Matches$home_team.home_team_name=="Barcelona",]
-
+#BarcaMatches <- BarcaMatches[BarcaMatches$season.season_name=="2014/2015",]
 # barca lineups
 lineups <- StatsBombFreeLineups(MatchesDF = BarcaMatches)
 lineups <- lineups[lineups$team_name=="Barcelona",]
@@ -34,8 +34,8 @@ names(BarcaEvents)
 
 ##### number of xG
 # xG = shot.statsbomb_xg
+#shots <- BarcaEvents[BarcaEvents$type.name=="Shot" & !is.na(BarcaEvents$shot.key_pass_id),]
 shots <- BarcaEvents[BarcaEvents$type.name=="Shot",]
-
 ShotsPerGame <- 7742/448
 ShotsPerGame # 17.28125
 
@@ -51,7 +51,7 @@ stats_PerPlayer_Per90 <- shots %>%
 
 
 # top 15 in total goals
-top_15 <- top_n(stats_PerPlayer, 15, total_goals)
+top_15 <- top_n(stats_PerPlayer, 45, total_goals)
 
 ggplot(top_15, aes(y=total_goals, x=xG, color=player.name)) +
   geom_point(size=3) +
