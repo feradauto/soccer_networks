@@ -153,7 +153,3 @@ ggplot(xA_goalsm, aes(y=goals_90, x=xA_90)) +
   stat_smooth(method = "lm", col = "red")
 
 
-require(pscl)
-m1 <- zeroinfl(goals ~ time + xA_90 |goals-1,
-               data = xA_goalsm, dist = "negbin")
-summary(m1)
