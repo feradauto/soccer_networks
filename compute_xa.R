@@ -10,13 +10,14 @@ Matches <- FreeMatches(Comp)
 
 # filter only barca matches
 BarcaMatches <- Matches[Matches$away_team.away_team_name=="Barcelona" | Matches$home_team.home_team_name=="Barcelona",]
-#BarcaMatches <- BarcaMatches[BarcaMatches$season.season_name=="2018/2019",]
+BarcaMatches <- BarcaMatches[BarcaMatches$competition.competition_name=="La Liga",]
+#BarcaMatches <- BarcaMatches[BarcaMatches$season.season_name=="2014/2015",]
 # barca lineups
 lineups <- StatsBombFreeLineups(MatchesDF = BarcaMatches)
 lineups <- lineups[lineups$team_name=="Barcelona",]
 
 BarcaEvents <- StatsBombData[StatsBombData$team.name=="Barcelona",]
-#BarcaEvents <- BarcaEvents[BarcaEvents$match_id %in% BarcaMatches$match_id,]
+BarcaEvents <- BarcaEvents[BarcaEvents$match_id %in% BarcaMatches$match_id,]
 
 ##### get number of xG and join with key pass to get xA
 passes <- BarcaEvents[BarcaEvents$type.name=="Pass",]
@@ -101,4 +102,5 @@ time_xa<-mutate(time_xa, pair = mapply(c, player.id.pass, player.id.shot, SIMPLI
 ## keep sorted for future join
 time_xa$pair<-lapply(time_xa$pair,sort)
 save(time_xa, file = "../data/processed/time_xa.RData")
+#save(time_xa, file = "../data/processed/time_xa2015.RData")
 

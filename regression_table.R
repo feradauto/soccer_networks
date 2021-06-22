@@ -5,6 +5,7 @@ library(ggplot2)
 
 load("../data/processed/lineups_formated_agg.RData")
 load("../data/processed/time_xa.RData")
+load("../data/processed/lineup_season.RData")
 ## unlist and then aggregate to get all possible combinations of 2 players among a lineup
 unlist_func1 <- function(data) {
   temp1 <- sapply(data, is.list)
@@ -61,6 +62,48 @@ lineups_formated_agg<-lineups_formated_agg   %>% filter(time>1)
 lineups_formated_agg$goals_90<-90*lineups_formated_agg$goals/lineups_formated_agg$time
 xA_goals<-merge(xA_goals, lineups_formated_agg, by = c("id_lineup","lineup"))
 
+
+unlist_season <- function(data) {
+  temp1 <- plyr::ldply(data[[1]], rbind)
+  temp <- cbind(data[,2:3], temp1)
+  colnames(temp) <- c("season.season_name","time",
+                      "lineup.1","lineup.2", "lineup.3","lineup.4",
+                      "lineup.5","lineup.6","lineup.7","lineup.8",
+                      "lineup.9","lineup.10","lineup.11")
+  return(temp)
+} 
+
+idl<-lineups_formated_agg_unlisted%>%select(id_lineup,lineup.1,lineup.2,lineup.3,lineup.4,lineup.5,lineup.6,lineup.7,lineup.8,lineup.9,lineup.10,lineup.11)
+lineup_season<-unlist_season(lineup_season)
+line_id<-merge(idl, lineup_season, by = c("lineup.1","lineup.2", "lineup.3","lineup.4","lineup.5","lineup.6","lineup.7","lineup.8","lineup.9","lineup.10","lineup.11"))
+line_id<-line_id[order(line_id$time),]
+line_id <- line_id %>% 
+  group_by(id_lineup) %>% 
+  filter(time == max(time)) %>%
+  distinct
+line_id <- line_id %>% select(id_lineup,season.season_name)
+
+xA_goals<-merge(xA_goals, line_id, by = c("id_lineup"))
+
+xA_goals$type[xA_goals$season.season_name=="2004/2005"]="League"
+xA_goals$type[xA_goals$season.season_name=="2005/2006"]="League"
+xA_goals$type[xA_goals$season.season_name=="2006/2007"]="No League"
+xA_goals$type[xA_goals$season.season_name=="2007/2008"]="No League"
+xA_goals$type[xA_goals$season.season_name=="2008/2009"]="Trible"
+xA_goals$type[xA_goals$season.season_name=="2009/2010"]="League"
+xA_goals$type[xA_goals$season.season_name=="2010/2011"]="Treble"
+xA_goals$type[xA_goals$season.season_name=="2011/2012"]="No League"
+xA_goals$type[xA_goals$season.season_name=="2012/2013"]="League"
+xA_goals$type[xA_goals$season.season_name=="2013/2014"]="No League"
+xA_goals$type[xA_goals$season.season_name=="2014/2015"]="Treble"
+xA_goals$type[xA_goals$season.season_name=="2015/2016"]="League"
+xA_goals$type[xA_goals$season.season_name=="2016/2017"]="No League"
+xA_goals$type[xA_goals$season.season_name=="2017/2018"]="League"
+xA_goals$type[xA_goals$season.season_name=="2018/2019"]="League"
+xA_goals$type[xA_goals$season.season_name=="2019/2020"]="No League"
+
+
+
 plot_colorByDensity = function(x1,x2,
                                ylim=c(min(x2),max(x2)),
                                xlim=c(min(x1),max(x1)),
@@ -76,16 +119,41 @@ plot_colorByDensity = function(x1,x2,
        cex=2,xlab=xlab,ylab=ylab,
        main=main)
 }
-xA_goalsm<-xA_goals   %>% filter(time>30)
+xA_goalsm<-xA_goals   %>% filter(time>45)
 cor(xA_goalsm$xA_90,xA_goalsm$goals_90)
 fit <- lm(goals_90 ~ xA_90, data=xA_goalsm)
 summary(fit)
-confint(fit)
-plot_colorByDensity(xA_goalsm$xA_90,xA_goalsm$goals_90,main = "xA vs goals",ylab="Goals 90 min",xlab="xA 90 min")
+plot_colorByDensity(xA_goalsm$xA_90,xA_goalsm$goals_90,main = "Score vs goals",ylab="Goals 90 min",xlab="Lineup score")
+
+ggplot(xA_goalsm%>% filter(time<600), aes(y=goals_90, x=xA_90,color=time)) +
+  geom_point(size=3) +
+  labs(title="Lineup score vs goals") +
+  ylab("Goals 90 min") +
+  xlab("Lineup score")
+
+ggplot(xA_goalsm%>% filter(time<600), aes(y=goals_90, x=xA_90,color=season.season_name)) +
+  geom_point(size=3) +
+  labs(title="Lineup score vs goals") +
+  ylab("Goals 90 min") +
+  xlab("Lineup score")
 
 ggplot(xA_goalsm, aes(y=goals_90, x=xA_90)) +
   geom_point(size=3) +
-  labs(title="xA vs goals") +
+  labs(title="Lineup score vs Goals per 90 min") +
   ylab("Goals 90 min") +
-  xlab("xA 90 min")+ geom_abline(slope=1, intercept=0)
+  xlab("Lineup score") +
+  theme_bw()+ abline(0.3894, 1.3274,color='black')
 
+
+ggplot(xA_goalsm, aes(y=goals_90, x=xA_90)) +
+  labs(title="Lineup score vs goals") +
+  ylab("Goals 90 min") +
+  xlab("Lineup score") + 
+  geom_point() + theme_bw()+
+  stat_smooth(method = "lm", col = "red")
+
+
+require(pscl)
+m1 <- zeroinfl(goals ~ time + xA_90 |goals-1,
+               data = xA_goalsm, dist = "negbin")
+summary(m1)

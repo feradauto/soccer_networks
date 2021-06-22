@@ -15,6 +15,7 @@ names(Matches)
 
 # filter only barca matches
 BarcaMatches <- Matches[Matches$away_team.away_team_name=="Barcelona" | Matches$home_team.home_team_name=="Barcelona",]
+BarcaMatches <- BarcaMatches[BarcaMatches$competition.competition_name=="La Liga",]
 #BarcaMatches <- BarcaMatches[BarcaMatches$season.season_name=="2014/2015",]
 # barca lineups
 lineups <- StatsBombFreeLineups(MatchesDF = BarcaMatches)
@@ -175,4 +176,15 @@ lineups_formated <- rbind(lu1,lu2,lu3,lu4)
 lineups_formated_agg<-lineups_formated %>% group_by(lineup) %>% summarise(time=sum(time),goals=sum(goals))
 lineups_formated_agg$id_lineup<-rownames(lineups_formated_agg)
 save(lineups_formated_agg, file = "../data/processed/lineups_formated_agg.RData")
+
+match_season<-BarcaMatches %>% select(match_id,season.season_id,season.season_name,competition.competition_name)
+match_season<-match_season%>%filter(competition.competition_name=="La Liga")
+
+lineups_formated<-merge(lineups_formated, match_season, by = c("match_id"))
+
+lineup_season<-lineups_formated %>% group_by(lineup,season.season_name) %>% summarise(time=sum(time),goals=sum(goals))
+lineup_season<-lineup_season%>%select(lineup,season.season_name,time)
+
+save(lineup_season, file = "../data/processed/lineup_season.RData")
+
 
