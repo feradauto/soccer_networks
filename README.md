@@ -1,4 +1,4 @@
-# soccer_networks
+# Team composition analysis in football
 
 ## Description of R files
 
