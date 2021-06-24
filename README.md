@@ -17,6 +17,6 @@ In the file *compute_xa.R*, the expected goals (xG) values and the corresponding
 In *compute_network.R*, the necessary values for construction of the network are calculated and aggregated. Additionally, the file includes a few plots visualising the characteristics of the network and the individual nodes/players.
 
 ### Regression Table
-In the file *regression_table.R*, the pair-wise influences are extended to the full line-ups. The linear model is fit to get the relationship between the two following variables: Goals scored per 90 minutes for a line-up and the score of a line-up (the sum of influences).
+In the file *regression_table.R*, the pairwise influences are extended to the full line-ups. The linear model is fit to get the relationship between the two following variables: Goals scored per 90 minutes for a line-up and the score of a line-up (the sum of influences).
 
 
